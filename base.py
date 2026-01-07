@@ -156,6 +156,28 @@ class Broker(metaclass=SingletonMeta):
         return info_dict["session_deals"]
 
 
+    def get_account_info(self):
+        account_info=mt5.account_info()
+        if account_info!=None:
+            # display trading account data 'as is'
+            print(account_info)
+            # display trading account data in the form of a dictionary
+            print("Show account_info()._asdict():")
+            account_info_dict = mt5.account_info()._asdict()
+            for prop in account_info_dict:
+                print("  {}={}".format(prop, account_info_dict[prop]))
+            print()
+    
+            # convert the dictionary into DataFrame and print
+            df=pd.DataFrame(list(account_info_dict.items()),columns=['property','value'])
+            print("account_info() as dataframe:")
+            print(df)
+            return df
+        else:
+            print("Failed to retrieve account info.")
+            return None
+
+
     def _send_order(self, symbol, side, volume, price, magic=0):
 
         print(f"send order: symbol {symbol}, side {side}, volume {volume}")
@@ -659,7 +681,15 @@ class Broker(metaclass=SingletonMeta):
     def get_info(self, ticker):
         msg = mt5.symbol_info(ticker)
         return msg._asdict()
-
+    
+    
+    def save_deals_to_csv(self):
+        today = datetime.now().date()
+        date_str = today.strftime("%Y-%m-%d")
+        df_deals = self.get_deals()
+        df_deals.to_csv(f"data/deals_{date_str}.csv", index=False)
+        print(f"Deals saved to data/deals_{date_str}.csv")
+    
 
     def shutdown(self):
         mt5.shutdown()
@@ -679,46 +709,9 @@ def get_symbol_info(symbol):
         df['time_setup'] = pd.to_datetime(df['time_setup'], unit='s')
         return df
     
-    
-
-
 
 if __name__ == "__main__":
     broker = Broker()
-    info = mt5.symbol_info_tick("LFTS11")
-    print(info)
-    # # print(broker.get_acc_position())
-    # broker._send_order(symbol="LFTS11", side="BUY", volume=1, price=float(info.ask)+0.1, magic=0)
-    # print(broker.send_market_order("LFTS11", "BUY", 1))
-    # print(broker.get_acc_position())
-    # print(broker.get_deals_tags())
-    # print(broker.get_info())
-
-    # print(broker.get_active_orders())
-    # print(broker.get_deals())
-
-    # account_info=mt5.account_info()
-    # print("Account info:")
-    # print(account_info)
-    # if account_info!=None:
-    #     # display trading account data 'as is'
-    #     print(account_info)
-    #     # display trading account data in the form of a dictionary
-    #     print("Show account_info()._asdict():")
-    #     account_info_dict = mt5.account_info()._asdict()
-    #     for prop in account_info_dict:
-    #         print("  {}={}".format(prop, account_info_dict[prop]))
-    #     print()
-
-    #     # convert the dictionary into DataFrame and print
-    #     df=pd.DataFrame(list(account_info_dict.items()),columns=['property','value'])
-    #     print("account_info() as dataframe:")
-    #     print(df)
-
-    available_cash = 853.94
-
-    # print(broker.get_acc_position())
-    print(broker.get_deals())
-
-    # df_pos = broker.get_acc_position()
-    df_deals = broker.get_deals()
+    broker.get_account_info()
+    # broker.save_deals_to_csv()
+    

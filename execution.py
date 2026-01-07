@@ -39,6 +39,28 @@ class Execution:
         else:
             print("No info available for LFTS11, cannot allocate/deallocate.")
 
+    
+    def get_total_AUM(self):
+        df_pos = self.broker.get_acc_position()
+        print(df_pos)
+        df_deals = self.broker.get_deals()
+
+        total_AUM = 0.0
+        for ticker in df_pos['ticker'].unique():
+            pos_volume = df_pos.loc[df_pos['ticker'] == ticker, 'volume'].sum()
+            if pos_volume == 0:
+                continue
+
+            info = self.broker.get_info(ticker)
+            if info is None:
+                continue
+
+            current_price = info['bid'] if pos_volume > 0 else info['ask']
+            position_value = pos_volume * current_price
+            total_AUM += position_value
+
+        return total_AUM
+
 
 
 
@@ -46,4 +68,4 @@ class Execution:
 if __name__ == "__main__":
     available_cash = 853.94
     execution = Execution()
-    execution.allocate_lft(available_cash)
+    execution.get_total_AUM()
