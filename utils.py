@@ -1,5 +1,4 @@
 from typing import Optional
-import requests
 import picologging as logging
 import datetime
 import numpy as np
@@ -9,10 +8,11 @@ import MetaTrader5 as mt5
 import ujson as json
 from notifypy import Notify
 from datetime import timezone, timedelta
-import math
-import os
 from dotenv import load_dotenv
 
+from tvdata import TVData
+from datetime import datetime
+import numpy as np
 import tkinter as tk
 
 ALL_TICKERS = [
@@ -260,5 +260,17 @@ def setup_logger(name: str, stdout: bool = True, log_file: Optional[str] = None,
 
     return logger
 
+
+
+def get_lfts11_price():
+    # Calculate business days between Jan 5, 2026 and today (Jan 12, 2026)
+    start_date = datetime(2026, 1, 5)
+    end_date = datetime.now()
+    business_days = np.busday_count(start_date.date(), end_date.date())
+    # print(f"Business days between {start_date.date()} and {end_date.date()}: {business_days}")
+    
+    tvdata = TVData(ticker="LFTS11", interval=60*24)
+    price_data = tvdata.get_price(n_bars=int(business_days))
+    return price_data
 
 
