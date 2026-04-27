@@ -1,0 +1,108 @@
+{
+  "totais": {
+    "timestamp": "2026-04-23T16:23:53.845394Z",
+    "totalEmitido": 714507.000000000000000000,
+    "totalEmCirculacao": 714507.000000000000000000,
+    "totalLiberado": 211784.661584000000000000,
+    "totalEmStaking": 0.0,
+    "saldoCarteiras": 211784.661584000000000000
+  },
+  "wallets": [
+    {
+      "idCarteira": 3,
+      "nomeCliente": "BRD Treasury",
+      "nomeCarteira": "BRD Treasury",
+      "tipoCarteira": "Solana",
+      "chaveCarteira": "DsNJCAtUA7xmTSpYqNx9Chhx9QEDjM1AWzBFdVsbHKar",
+      "brdsEmitidos": 30259.661584000000000000,
+      "brdsLiberados": 30259.661584000000000000,
+      "brdsEmStaking": 0,
+      "saldoCarteira": 30259.661584000000000000,
+      "clienteTemporario": false
+    },
+    {
+      "idCarteira": 11,
+      "nomeCliente": "Daniel Henrique Cohn",
+      "nomeCarteira": "BRD WALLET",
+      "tipoCarteira": "Solana",
+      "chaveCarteira": "GMuR2i1TfXKvdXJn3iBZCdXomnqVQN3NpEApnmixEndb",
+      "brdsEmitidos": 75.000000000000000000,
+      "brdsLiberados": 75.000000000000000000,
+      "brdsEmStaking": 0.000000000000,
+      "saldoCarteira": 30075.000000000000000000,
+      "clienteTemporario": false
+    },
+    {
+      "idCarteira": 9,
+      "nomeCliente": "IVAN AUGUSTO YURI RODARTE",
+      "nomeCarteira": "BRD Wallet",
+      "tipoCarteira": "Solana",
+      "chaveCarteira": "CbVUNS2kgnJszuWwP7ioxGLkUHGWppbcAitC5AynnDSx",
+      "brdsEmitidos": 60150.000000000000000000,
+      "brdsLiberados": 60150.000000000000000000,
+      "brdsEmStaking": 0.000000000000,
+      "saldoCarteira": 30150.000000000000000000,
+      "clienteTemporario": false
+    },
+    {
+      "idCarteira": 3,
+      "nomeCliente": "LUCA MACHADO BOTTINO",
+      "nomeCarteira": "Luca1",
+      "tipoCarteira": "Solana",
+      "chaveCarteira": "FPx2Ta2emkrAE3w6jgr9uadVUeBGovnYKEGR8vnRx8jW",
+      "brdsEmitidos": 1000.000000000000000000,
+      "brdsLiberados": 1000.000000000000000000,
+      "brdsEmStaking": 0.000000000000,
+      "saldoCarteira": 1000.000000000000000000,
+      "clienteTemporario": false
+    },
+    {
+      "idCarteira": 4,
+      "nomeCliente": "SERGIO KULIKOVSKY",
+      "nomeCarteira": "kulikovsky.skr",
+      "tipoCarteira": "Solana",
+      "chaveCarteira": "3qsNsvWUJsZTk9FS3mmFv2YiUD6gPUJwpeqLQv4ahof8",
+      "brdsEmitidos": 75.000000000000000000,
+      "brdsLiberados": 75.000000000000000000,
+      "brdsEmStaking": 0.000000000000,
+      "saldoCarteira": 30075.000000000000000000,
+      "clienteTemporario": false
+    },
+    {
+      "idCarteira": 5,
+      "nomeCliente": "SERGIO KULIKOVSKY",
+      "nomeCarteira": "solana.brl",
+      "tipoCarteira": "Solana",
+      "chaveCarteira": "H9kLXtDvbEf4SULy2qLuAKQje2vo3hNCNvoAwzvTmgue",
+      "brdsEmitidos": 60000.000000000000000000,
+      "brdsLiberados": 60000.000000000000000000,
+      "brdsEmStaking": 0.000000000000,
+      "saldoCarteira": 0,
+      "clienteTemporario": false
+    },
+    {
+      "idCarteira": 7,
+      "nomeCliente": "Stephane Alberto Lopes",
+      "nomeCarteira": "BRD",
+      "tipoCarteira": "Solana",
+      "chaveCarteira": "6pgtAbfCwukveUfKYm22FEHP8w7NKD9Vd73NaCExLAKi",
+      "brdsEmitidos": 60150.000000000000000000,
+      "brdsLiberados": 60150.000000000000000000,
+      "brdsEmStaking": 0.000000000000,
+      "saldoCarteira": 60150.000000000000000000,
+      "clienteTemporario": false
+    },
+    {
+      "idCarteira": 10,
+      "nomeCliente": "YGOR BERNARDO MUNHOZ",
+      "nomeCarteira": "BRD Wallet",
+      "tipoCarteira": "Solana",
+      "chaveCarteira": "3DHW2ZCYcKdzqBxyeVcG6TxG6foHdokvJS6Xr55VKPZq",
+      "brdsEmitidos": 75.000000000000000000,
+      "brdsLiberados": 75.000000000000000000,
+      "brdsEmStaking": 0.000000000000,
+      "saldoCarteira": 30075.000000000000000000,
+      "clienteTemporario": false
+    }
+  ]
+}
