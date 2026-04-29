@@ -16,9 +16,7 @@ from dotenv import load_dotenv
 
 import sys
 sys.path.append(".")
-from cex.binance.crypto_tracker_v2 import CryptoPriceTracker
 from singleton_meta import SingletonMeta
-from state_manager import StateManager
 from utils import push_notification, setup_logger
 
 
@@ -40,7 +38,11 @@ MARKET_ALIASES = {
 }
 VALID_ORDER_SIDES = {"BUY", "SELL"}
 
+DEFAULT_QUOTE_ASSET = "USDT"
+QUOTE_ASSETS = ['USDT', 'USDC', 'FDUSD', 'BUSD', 'TUSD', 'BRL', 'ARS', 'BTC', 'ETH]', 'BNB', 'TRY', 'EUR']
 UNDERLYING_CURRENCIES = ['USDC', 'USDT']
+STABLE_PRICE_ASSETS = {'USDC', 'USDT', 'FDUSD', 'BUSD', 'TUSD'}
+CASH_ASSETS = STABLE_PRICE_ASSETS | {'BRL', 'ARS', 'TRY', 'EUR'}
 STOP_LIMIT_TOKENS = [] # []
 STOP_PRICE_TOL = 0.0005 # 5 bps
 
@@ -197,45 +199,15 @@ class BinanceController(metaclass=SingletonMeta):
 
     def __init__(self):
         load_dotenv()
-        self.api_key = os.getenv("APIKEYALEX")
-        self.api_secret = os.getenv("APISECRETALEX")
+        self.api_key = os.getenv("APIKEYBINANCE")
+        self.api_secret = os.getenv("APISECRETBINANCE")
         self.binance_client = Client(self.api_key, self.api_secret)
         self.lock = threading.Lock()
-
-        self.state_manager = StateManager()
-
-        self.settlement_token = self.state_manager.get_settlement_token_dict()
-        self.ks_norm = self.state_manager.get_ks_norm()
-
         self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=16)
-
         self.logger = setup_logger(name=__name__, stdout=True, log_file='binance_log.log', level=logging.INFO)
-        self.precision_dict = None
         self.spot_symbol_filters: Dict[str, Dict[str, Decimal]] = {}
-
-    def start_tracker(self):
-        self.price_tracker.start()
-
-    def stop_tracker(self):
-        self.price_tracker.stop()
-
-    def get_mid_price(self, token: str) -> float:
-
-        if token not in self.price_tracker.tokens:
-            if token[-4:] not in ['USDT', 'USDC']:
-                token_full = token + self.state_manager.get_settlement_token_dict()[token]
-            else:
-                token_full = token
-            return self.get_futures_ticker_price(token_full)
-        return self.price_tracker.get_mid_price(token)
-
-    def get_mid_prices(self) -> dict[str, float]:
-        return self.price_tracker.get_mid_prices()
-    
-    def _get_precision_dict(self) -> Dict[str, int]:
-        if self.precision_dict is None:
-            self.precision_dict = self.state_manager.get_precision_dict()
-        return self.precision_dict
+        self.futures_symbol_filters: Dict[str, Dict[str, Decimal]] = {}
+        self.futures_precision: Dict[str, int] = {}
 
     def _normalize_market_type(self, market_type: str = FUTURES_MARKET) -> str:
         normalized_market = MARKET_ALIASES.get(str(market_type).lower())
@@ -253,22 +225,19 @@ class BinanceController(metaclass=SingletonMeta):
 
     def _get_base_token(self, token_or_symbol: str) -> str:
         token_or_symbol = str(token_or_symbol).upper()
-        for settlement in sorted(UNDERLYING_CURRENCIES, key=len, reverse=True):
-            if token_or_symbol.endswith(settlement) and len(token_or_symbol) > len(settlement):
-                return token_or_symbol[:-len(settlement)]
+        for quote_asset in sorted(QUOTE_ASSETS, key=len, reverse=True):
+            if token_or_symbol.endswith(quote_asset) and len(token_or_symbol) > len(quote_asset):
+                return token_or_symbol[:-len(quote_asset)]
         return token_or_symbol
 
-    def _get_order_symbol(self, token: str, market_type: str = FUTURES_MARKET) -> str:
+    def _get_order_symbol(self, token: str, market_type: str = FUTURES_MARKET, quote_asset: str = DEFAULT_QUOTE_ASSET) -> str:
         self._normalize_market_type(market_type)
         token = str(token).upper()
         base_token = self._get_base_token(token)
         if base_token != token:
             return token
 
-        settlement = self.settlement_token.get(base_token)
-        if not settlement:
-            raise BinanceValidationError(f"No settlement token configured for {base_token}.")
-        return f"{base_token}{settlement}"
+        return f"{base_token}{str(quote_asset).upper()}"
 
     @staticmethod
     def _decimal_to_plain_string(value: Decimal) -> str:
@@ -306,6 +275,52 @@ class BinanceController(metaclass=SingletonMeta):
         self.spot_symbol_filters[symbol] = parsed_filter
         return parsed_filter
 
+    def _get_futures_symbol_info(self, symbol: str) -> Dict[str, Any]:
+        symbol = self._get_order_symbol(symbol, FUTURES_MARKET)
+        exchange_info = self.binance_client.futures_exchange_info()
+        symbol_info = next((item for item in exchange_info.get("symbols", []) if item.get("symbol") == symbol), None)
+        if not symbol_info:
+            raise BinanceValidationError(f"Futures symbol {symbol} was not found on Binance.")
+        return symbol_info
+
+    def _get_futures_lot_size_filter(self, symbol: str) -> Dict[str, Decimal]:
+        symbol = self._get_order_symbol(symbol, FUTURES_MARKET)
+        if symbol in self.futures_symbol_filters:
+            return self.futures_symbol_filters[symbol]
+
+        symbol_info = self._get_futures_symbol_info(symbol)
+        lot_size_filter = next(
+            (item for item in symbol_info.get("filters", []) if item.get("filterType") in {"MARKET_LOT_SIZE", "LOT_SIZE"}),
+            None,
+        )
+        if not lot_size_filter:
+            raise BinanceValidationError(f"Futures symbol {symbol} does not expose a lot size filter.")
+
+        try:
+            parsed_filter = {
+                "minQty": Decimal(str(lot_size_filter["minQty"])),
+                "maxQty": Decimal(str(lot_size_filter["maxQty"])),
+                "stepSize": Decimal(str(lot_size_filter["stepSize"])),
+            }
+        except (InvalidOperation, KeyError) as exc:
+            raise BinanceValidationError(f"Could not parse futures lot size filter for {symbol}: {lot_size_filter}") from exc
+
+        if parsed_filter["stepSize"] <= 0:
+            raise BinanceValidationError(f"Futures symbol {symbol} returned an invalid stepSize.")
+
+        self.futures_symbol_filters[symbol] = parsed_filter
+        return parsed_filter
+
+    def _get_futures_quantity_precision(self, symbol: str) -> int:
+        symbol = self._get_order_symbol(symbol, FUTURES_MARKET)
+        if symbol in self.futures_precision:
+            return self.futures_precision[symbol]
+
+        symbol_info = self._get_futures_symbol_info(symbol)
+        precision = int(symbol_info.get("quantityPrecision", 8))
+        self.futures_precision[symbol] = precision
+        return precision
+
     def _round_spot_quantity(self, quantity: float, symbol: str) -> str:
         try:
             quantity_decimal = Decimal(str(quantity))
@@ -333,19 +348,26 @@ class BinanceController(metaclass=SingletonMeta):
         if market_type == SPOT_MARKET:
             return self._round_spot_quantity(quantity, symbol or self._get_order_symbol(token, market_type))
 
-        base_token = self._get_base_token(token)
-        execute_qty = self.round_down(quantity, base_token)
-        if execute_qty <= 0:
-            raise BinanceValidationError(f"Futures quantity for {base_token} must be greater than zero after rounding.")
-        return str(execute_qty)
-
-    def round_down(self, number, coin) -> float:
-        
+        symbol = symbol or self._get_order_symbol(token, market_type)
         try:
-            return round(number, self._get_precision_dict()[coin])
-        except Exception as e:
-            self.logger.error(f"Error in the precision {coin}: {e}", exc_info=True)
-            raise e
+            quantity_decimal = Decimal(str(quantity))
+        except InvalidOperation as exc:
+            raise BinanceValidationError(f"Invalid futures quantity for {symbol}: {quantity}") from exc
+
+        lot_size = self._get_futures_lot_size_filter(symbol)
+        rounded_quantity = (quantity_decimal / lot_size["stepSize"]).to_integral_value(rounding=ROUND_DOWN) * lot_size["stepSize"]
+        if rounded_quantity <= 0:
+            raise BinanceValidationError(f"Futures quantity for {symbol} must be greater than zero after rounding.")
+        if rounded_quantity < lot_size["minQty"]:
+            raise BinanceValidationError(
+                f"Futures quantity for {symbol} is below minQty {lot_size['minQty']} after rounding: {rounded_quantity}."
+            )
+        if rounded_quantity > lot_size["maxQty"]:
+            raise BinanceValidationError(
+                f"Futures quantity for {symbol} is above maxQty {lot_size['maxQty']} after rounding: {rounded_quantity}."
+            )
+        return self._decimal_to_plain_string(rounded_quantity)
+
 
     def get_futures_ticker_price(self, token, spot=False) -> float:
         if token != "COREUSDT":
@@ -372,47 +394,6 @@ class BinanceController(metaclass=SingletonMeta):
         except Exception as e:
             self.logger.error(f"Error fetching spot ticker price for {token}: {e}", exc_info=True)
             raise e
-
-    def get_etf_basket_tickers_prices(self, etfs: str | List[str] = ['HASH11', 'ETHE11', 'SOLH11', 'QSOL11'], normalize=False, spot=False) -> Dict[str, float]:
-        if isinstance(etfs, str):
-            etfs = [etfs]
-
-        relevant_symbols = set()
-
-        ks_norm_filtered = {ticker: basket for ticker, basket in self.state_manager.get_ks_norm().items() if ticker in etfs}
-
-        # Gather all unique symbols from the ks_norm configuration
-        for base_tokens in ks_norm_filtered.values():
-
-            for token in base_tokens.keys():
-                if token in ['USD', 'BRL']:
-                    continue
-                settlement = self.settlement_token[token]
-                if settlement:
-                    relevant_symbols.add(f"{token}{settlement}")
-                else:
-                    self.logger.warning(f"No settlement token found for {token} in ks_norm, skipping for trade fetch.")
-
-        basket_prices = {}
-        future_ticker_prices = {}
-        for symbol in relevant_symbols:
-            try:
-                future_ticker_prices[symbol] = self.executor.submit(self.get_futures_ticker_price, symbol, spot)
-            except Exception as e:
-                self.logger.error(f"Error submitting ticker price fetch for {symbol}: {e}", exc_info=True)
-                try:
-                    future_ticker_prices[symbol] = self.executor.submit(self.get_futures_ticker_price, symbol, not spot)
-                except Exception as e:
-                    self.logger.error(f"Error submitting fallback ticker price fetch for {symbol}: {e}", exc_info=True)
-                    raise e
-
-        for symbol, future_ticker_price in future_ticker_prices.items():
-            if normalize:
-                basket_prices[symbol[:-4]] = future_ticker_price.result()
-            else:
-                basket_prices[symbol] = future_ticker_price.result()
-
-        return basket_prices
 
     def send_market_spot_order(self, token: str, quantity: float, side: str) -> Dict[str, Any]:
         return self.execute_market_individual_order(token, quantity, side, market_type=SPOT_MARKET)
@@ -452,48 +433,16 @@ class BinanceController(metaclass=SingletonMeta):
                 f"Could not execute {market_type} order for {token}: {exc}"
             ) from exc
 
-    def get_execute_dict(
-        self,
-        ticker,
-        quantity,
-        side='None',
-        order_type='market',
-        token_qty=True,
-        market_type: str = FUTURES_MARKET,
-    ) -> Dict[str, float]:
-        market_type = self._normalize_market_type(market_type)
-        ticker_ks_norms = self.ks_norm.get(ticker)
-        if not isinstance(ticker_ks_norms, dict):
-            error_message = f"Ticker {ticker} not found in ks_norm"
-            handle_error(0, error_message, logger=self.logger, raise_exception=False)
-            raise BinanceValidationError(error_message)
-
-        adjusted_execute_dict = {}
-        for token, k_norm in ticker_ks_norms.items():
-            raw_quantity = k_norm * quantity
-            if raw_quantity == 0:
-                self.logger.debug(f"Skipping zero quantity for {token} in {ticker}.")
-                continue
-
-            symbol = self._get_order_symbol(token, market_type)
-            execute_qty = float(self._round_order_quantity(token, raw_quantity, market_type, symbol=symbol))
-            adjusted_execute_dict[token] = execute_qty
-        return adjusted_execute_dict
 
     def _build_futures_stop_limit_order(self, token, quantity, side) -> Dict[str, str]:
         symbol = self._get_order_symbol(token, FUTURES_MARKET)
         order_quantity = self._round_order_quantity(token, quantity, FUTURES_MARKET, symbol=symbol)
-        #bba = self.price_tracker.get_best_bid(token) if side == "BUY" else self.price_tracker.get_best_ask(token)
-        #stop_price = self.round_down(bba * (1+STOP_PRICE_TOL if side == "BUY" else 1-STOP_PRICE_TOL), token)
         order = {
                 "symbol": symbol,
-                #"type": "STOP",
                 "type": "LIMIT",
                 "side": self._normalize_side(side),
                 "quantity": order_quantity,
-                #"price": "3900",
                 "priceMatch": "QUEUE",
-                #"stopPrice": str(stop_price),
                 "timeInForce": "GTC"
             }
         return order
@@ -532,21 +481,6 @@ class BinanceController(metaclass=SingletonMeta):
             return self._build_spot_market_order(token, quantity, side)
         return self._build_futures_order(token, quantity, side)
 
-    def build_batch_order(
-        self,
-        ticker,
-        quantity,
-        side,
-        market_type: str = FUTURES_MARKET,
-    ) -> Iterator[List[Dict[str, str]]]:
-        market_type = self._normalize_market_type(market_type)
-        execute_dict = self.get_execute_dict(ticker, quantity, market_type=market_type)
-        batch_order = []
-        for token, execute_qty in execute_dict.items():
-            batch_order.append(self._build_order(token, execute_qty, side, market_type=market_type))
-        total_orders = len(batch_order)
-        for i in range(0, total_orders, 5): # 5 orders per batch max
-            yield batch_order[i:min(i + 5, total_orders)]
             
     def _observe_orders(self, responses: List[Dict[str, str]]) -> None:
         # observe limit orders
@@ -557,16 +491,12 @@ class BinanceController(metaclass=SingletonMeta):
                     symbol = response.get("symbol")
                     if order_id is not None and symbol is not None and isinstance(order_id, (int, str)) and isinstance(symbol, str):
                         try:
-                            precision_key = symbol[:-4]
-                            symbol_qty_precision = self._get_precision_dict().get(precision_key)
-                            if symbol_qty_precision is not None:
-                                threading.Timer(
-                                    OBSERVE_LIMIT_ORDER_TIME,
-                                    observe_limit_order,
-                                    args=(self.binance_client, symbol, int(order_id), symbol_qty_precision, self.logger)
-                                ).start()
-                            else:
-                                self.logger.warning(f"Cannot observe limit order, precision not found for symbol: {symbol}")
+                            symbol_qty_precision = self._get_futures_quantity_precision(symbol)
+                            threading.Timer(
+                                OBSERVE_LIMIT_ORDER_TIME,
+                                observe_limit_order,
+                                args=(self.binance_client, symbol, int(order_id), symbol_qty_precision, self.logger)
+                            ).start()
                         except Exception as timer_exc:
                             self.logger.error(f"Error starting timer for observing limit order {order_id} on {symbol}: {timer_exc}", exc_info=True)
                     else:
@@ -581,84 +511,16 @@ class BinanceController(metaclass=SingletonMeta):
         side: str,
         market_type: str = FUTURES_MARKET,
     ) -> List[Dict[str, Any]]:
-        market_type = self._normalize_market_type(market_type)
-        side = self._normalize_side(side)
-        responses = []
-        futures = []
-
-        try:
-            batch_orders = self.build_batch_order(ticker, quantity, side, market_type=market_type)
-            if market_type == FUTURES_MARKET:
-                for batch_order in batch_orders:
-                    self.logger.info(f"Submitting futures batch order for {ticker}: {batch_order}")
-                    futures.append(self.executor.submit(self.binance_client.futures_place_batch_order, batchOrders=batch_order))
-
-                for future in concurrent.futures.as_completed(futures):
-                    response = future.result()
-                    handle_batch_response(response, logger=self.logger)
-                    if isinstance(response, list):
-                        responses.extend(response)
-                    else:
-                        responses.append(response)
-            else:
-                for batch_order in batch_orders:
-                    for order in batch_order:
-                        self.logger.info(f"Submitting spot order for {ticker}: {order}")
-                        futures.append(self.executor.submit(self.binance_client.create_order, **order))
-
-                for future in concurrent.futures.as_completed(futures):
-                    response = future.result()
-                    handle_single_response(response, logger=self.logger)
-                    responses.append(response)
-
-        except BinanceControllerError:
-            raise
-        except Exception as exc:
-            self.logger.error(
-                f"Error executing {market_type} basket order for ticker={ticker}, quantity={quantity}, side={side}: {exc}",
-                exc_info=True,
-            )
-            raise BinanceOrderExecutionError(
-                f"Could not execute {market_type} basket order for {ticker}: {exc}"
-            ) from exc
-        
-        if market_type == FUTURES_MARKET:
-            self._observe_orders(responses)
-        self.logger.info(responses)
-        return responses
+        return [self.execute_market_individual_order(ticker, quantity, side, market_type=market_type)]
 
     def execute_futures_market_order(self, ticker: str, quantity: int, side: str) -> List[Dict[str, Any]]:
-        return self.execute_market_order(ticker, quantity, side, market_type=FUTURES_MARKET)
+        return [self.execute_market_individual_order(ticker, quantity, side, market_type=FUTURES_MARKET)]
 
     def execute_perpetual_market_order(self, ticker: str, quantity: int, side: str) -> List[Dict[str, Any]]:
-        return self.execute_market_order(ticker, quantity, side, market_type=FUTURES_MARKET)
+        return [self.execute_market_individual_order(ticker, quantity, side, market_type=FUTURES_MARKET)]
 
     def execute_spot_market_order(self, ticker: str, quantity: int, side: str) -> List[Dict[str, Any]]:
-        return self.execute_market_order(ticker, quantity, side, market_type=SPOT_MARKET)
-
-    def get_fair_price(self, ticker) -> float:
-        return self.state_manager.get_fair(ticker)
-
-    def _get_relevant_symbols(
-        self,
-        etfs: Optional[List[str]] = None,
-        market_type: str = FUTURES_MARKET,
-    ) -> set[str]:
-        market_type = self._normalize_market_type(market_type)
-        etfs = etfs or ['HASH11', 'ETHE11', 'SOLH11', 'QSOL11']
-        relevant_symbols = set()
-
-        ks_norm_filtered = {ticker: basket for ticker, basket in self.ks_norm.items() if ticker in etfs}
-        for base_tokens in ks_norm_filtered.values():
-            for token in base_tokens.keys():
-                if token in ['USD', 'BRL']:
-                    continue
-                try:
-                    relevant_symbols.add(self._get_order_symbol(token, market_type))
-                except BinanceValidationError as exc:
-                    self.logger.warning(f"Skipping {token} for {market_type} trade fetch: {exc}")
-
-        return relevant_symbols
+        return [self.execute_market_individual_order(ticker, quantity, side, market_type=SPOT_MARKET)]
 
     def get_positions2(self) -> pd.DataFrame:
         positions = self.binance_client.futures_account()["positions"]
@@ -676,7 +538,7 @@ class BinanceController(metaclass=SingletonMeta):
         df = df[["symbol", "notional", "positionAmt", "price"]]
         return df
 
-    def get_account_trades(self, days_back=0, market_type: str = FUTURES_MARKET) -> pd.DataFrame:
+    def get_account_trades(self, symbols: str | List[str], days_back=0, market_type: str = FUTURES_MARKET) -> pd.DataFrame:
         market_type = self._normalize_market_type(market_type)
         start_of_day = datetime.now().replace(hour=1, minute=0, second=0, microsecond=0)
         if days_back > 0:
@@ -685,7 +547,10 @@ class BinanceController(metaclass=SingletonMeta):
         start_of_day_ts = int(start_of_day.timestamp() * 1000)
 
         all_trades = []
-        for ticker in self._get_relevant_symbols(market_type=market_type):
+        if isinstance(symbols, str):
+            symbols = [symbols]
+
+        for ticker in [self._get_order_symbol(symbol, market_type) for symbol in symbols]:
             try:
                 if market_type == SPOT_MARKET:
                     trades = self.binance_client.get_all_orders(symbol=ticker, startTime=start_of_day_ts, limit=100)
@@ -766,6 +631,7 @@ class BinanceController(metaclass=SingletonMeta):
 
     def get_trades_for_period(
         self,
+        symbols: str | List[str],
         start_ts: int,
         end_ts: int,
         market_type: str = FUTURES_MARKET,
@@ -777,11 +643,12 @@ class BinanceController(metaclass=SingletonMeta):
         market_type = self._normalize_market_type(market_type)
         all_trades_list = []
         futures = {}
-        relevant_symbols = self._get_relevant_symbols(market_type=market_type)
+        if isinstance(symbols, str):
+            symbols = [symbols]
+        relevant_symbols = [self._get_order_symbol(symbol, market_type) for symbol in symbols]
 
         if not relevant_symbols:
-            self.logger.warning("No relevant symbols found to fetch trades for.")
-            return pd.DataFrame()
+            raise BinanceValidationError("At least one symbol is required to fetch trades.")
 
         self.logger.info(f"Fetching {market_type} trades for {len(relevant_symbols)} symbols from {datetime.fromtimestamp(start_ts/1000)} to {datetime.fromtimestamp(end_ts/1000)}")
 
@@ -819,7 +686,7 @@ class BinanceController(metaclass=SingletonMeta):
         self.logger.info(f"Total filled {market_type} trades fetched across all symbols: {len(trades_df)}")
         return trades_df
 
-    def get_trades_for_date(self, date_str: str, market_type: str = FUTURES_MARKET) -> pd.DataFrame:
+    def get_trades_for_date(self, symbols: str | List[str], date_str: str, market_type: str = FUTURES_MARKET) -> pd.DataFrame:
         """
         Fetches all filled account trades for a specific date (YYYYMMDD).
         The date is interpreted in the system's local timezone.
@@ -841,10 +708,11 @@ class BinanceController(metaclass=SingletonMeta):
         end_ts = int(end_dt.timestamp() * 1000)
 
         self.logger.info(f"Fetching {market_type} trades for date: {date_str}")
-        return self.get_trades_for_period(start_ts, end_ts, market_type=market_type)
+        return self.get_trades_for_period(symbols, start_ts, end_ts, market_type=market_type)
 
     def get_trades_history(
         self,
+        symbols: str | List[str],
         start_date_str: str,
         end_date_str: Optional[str] = None,
         market_type: str = FUTURES_MARKET,
@@ -889,7 +757,7 @@ class BinanceController(metaclass=SingletonMeta):
 
             # Use the existing method to get trades for the single day
             try:
-                daily_trades_df = self.get_trades_for_date(current_date_str, market_type=market_type)
+                daily_trades_df = self.get_trades_for_date(symbols, current_date_str, market_type=market_type)
                 if not daily_trades_df.empty:
                     self.logger.debug(f"Found {len(daily_trades_df)} trades for {current_date_str}")
                     all_daily_trades.append(daily_trades_df)
@@ -944,34 +812,6 @@ class BinanceController(metaclass=SingletonMeta):
         df["day"] = df["date"].dt.date
         return df
 
-    def get_all_token_precisions(self) -> Dict[str, int]:
-        futures_exchange_info = self.binance_client.futures_exchange_info()
-        tokens = []
-        for etf in list(self.ks_norm.keys()):
-            tokens.extend(list(self.ks_norm[etf].keys()))
-        tokens = list(set(tokens))
-
-        precisions = {}
-        error_tokens = []
-
-        symbols_info = futures_exchange_info['symbols']
-        for token in tokens:
-            instrument = f"{token}{self.settlement_token[token]}"
-            token_info_arr = list(filter(lambda x: x['symbol'] == instrument, symbols_info))
-            if len(token_info_arr) != 1:
-                error_tokens.append(token)
-                continue
-
-            token_info = token_info_arr[0]
-            tokenQtyPrecision = int(token_info['quantityPrecision'])
-            precisions[token] = tokenQtyPrecision
-
-
-        self.logger.info(f"{len(tokens) - len(error_tokens)} precisions were successfully retrieved.")
-        if len(error_tokens) > 0:
-            push_notification(f"Error getting precision for {len(error_tokens)} token(s)", f"{error_tokens}")
-        return precisions
-
     def get_futures_acc_balance(self):
         acc_balance_data = self.binance_client.futures_account_balance()
         filtered_balance_data = list(filter(lambda data: data['asset'] in ['USDT', 'USDC'], acc_balance_data))
@@ -1001,11 +841,13 @@ class BinanceController(metaclass=SingletonMeta):
 
     def get_total_margin_balance_usd(self):
         account_summary = self.get_futures_acc_balance()
+        if account_summary.empty:
+            return 0.0
         return account_summary["balance"].astype(float).sum()
 
     def get_spot_positions(self, normalize_symbols=False) -> pd.DataFrame:
         balances = self.get_spot_acc_balance(non_zero=True)
-        columns = ["symbol", "notional", "positionAmt", "price", "markPrice", "liquidationPrice", "perc_liquidation"]
+        columns = ["symbol", "notional", "positionAmt", "price", "markPrice"]
         if balances.empty:
             return pd.DataFrame(columns=columns)
 
@@ -1017,9 +859,11 @@ class BinanceController(metaclass=SingletonMeta):
             price = None
             notional = None
 
-            if asset in UNDERLYING_CURRENCIES:
+            if asset in STABLE_PRICE_ASSETS:
                 price = 1.0
                 notional = amount
+            elif asset in CASH_ASSETS:
+                self.logger.info(f"Skipping spot USD pricing for cash asset {asset}.")
             else:
                 try:
                     symbol = self._get_order_symbol(asset, SPOT_MARKET)
@@ -1034,8 +878,6 @@ class BinanceController(metaclass=SingletonMeta):
                 "positionAmt": round(amount, 8),
                 "price": round(price, 8) if price is not None else None,
                 "markPrice": round(price, 8) if price is not None else None,
-                "liquidationPrice": None,
-                "perc_liquidation": None,
             })
 
         df = pd.DataFrame.from_records(positions, columns=columns)
@@ -1052,17 +894,13 @@ class BinanceController(metaclass=SingletonMeta):
         df = pd.DataFrame.from_records(self.binance_client.futures_position_information())
 
         if df.empty:
-            df = pd.DataFrame(columns=["symbol", "notional", "positionAmt", "price", "markPrice", "liquidationPrice", "perc_liquidation"])
+            df = pd.DataFrame(columns=["symbol", "notional", "positionAmt", "price", "markPrice"])
             return df
 
         df["positionAmt"] = df["positionAmt"].astype(float)
         df["markPrice"] = df["markPrice"].astype(float)
-        df["liquidationPrice"] = df["liquidationPrice"].astype(float)
         df = df[df["positionAmt"] != 0.0]
-        df["perc_liquidation"] = df["liquidationPrice"] / df["markPrice"] - 1
 
-        #df["perc_liquidation"] = df["perc_liquidation"].apply(lambda x: '{:.2%}'.format(x))
-        df["liquidationPrice"] = df["liquidationPrice"].apply(lambda x: round(x, 2))
         df["markPrice"] = df["markPrice"].apply(lambda x: round(x, 2))
         df["positionAmt"] = df["positionAmt"].apply(lambda x: round(x, 3))
         df["notional"] = df["notional"].apply(lambda x: round(float(x), 2))
@@ -1072,11 +910,11 @@ class BinanceController(metaclass=SingletonMeta):
         if normalize_symbols:
             df["symbol"] = df["symbol"].apply(lambda symbol: symbol[:-4])
 
-        df[["symbol", "notional", "positionAmt", "markPrice", "liquidationPrice", "perc_liquidation"]]
+        df[["symbol", "notional", "positionAmt", "markPrice"]]
         df['price'] = df['markPrice']
-        num_cols = ["notional", "positionAmt", "price", "markPrice", "liquidationPrice", "perc_liquidation"]
+        num_cols = ["notional", "positionAmt", "price", "markPrice"]
         df[num_cols] = df[num_cols].astype(float)
-        return df[["symbol", "notional", "positionAmt", "price", "markPrice", "liquidationPrice", "perc_liquidation"]]
+        return df[["symbol", "notional", "positionAmt", "price", "markPrice"]]
 
     def get_subaccount_transfer_history(self, email: str, futures_type: int = 1, start_time: Optional[int] = None, end_time: Optional[int] = None) -> pd.DataFrame:
         params = {}
@@ -1104,6 +942,8 @@ if __name__ == "__main__":
     # binance.get_trades_history('20250314')
 
     #print(binance.get_positions())
-    pos = binance.get_positions(normalize_symbols=True)
+    pos = binance.get_positions(normalize_symbols=True, kind="spot")
     print(pos)
+
+    # binance.send_market_spot_order("BTC", 0.0004, side="SELL")
 

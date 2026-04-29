@@ -1,0 +1,49 @@
+services:
+  # ========== DATABASE ==========
+  postgres:
+    image: postgres:16
+    container_name: brd-postgres
+    restart: unless-stopped
+    command: >
+      bash -c "
+      usermod -s /bin/bash root &&
+      usermod -s /bin/bash postgres &&
+      echo 'case \"\$$-\" in *i*) [ -n \"\$$BASH\" ] || exec bash ;; esac' > /root/.profile &&
+      echo 'case \"\$$-\" in *i*) [ -n \"\$$BASH\" ] || exec bash ;; esac' > /var/lib/postgresql/.profile &&
+      chown postgres:postgres /var/lib/postgresql/.profile &&
+      exec docker-entrypoint.sh postgres
+      "
+    environment:
+      POSTGRES_DB: brdasset
+      POSTGRES_USER: assetuser
+      POSTGRES_PASSWORD: assetpassword
+      PGDATA: /var/lib/postgresql/data/pgdata
+      ENV: /root/.profile
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - brd-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U assetuser -d brdasset"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+
+# ========== VOLUMES ==========
+volumes:
+  postgres-data:
+    driver: local
+
+
+# ========== NETWORK ==========
+networks:
+  brd-network:
+    driver: bridge
+    name: brd-network
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+          gateway: 172.20.0.1
