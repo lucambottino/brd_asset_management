@@ -1,0 +1,165 @@
+{
+  "totals": {
+    "tokensMintedSoFar": "714507",
+    "totalCollateral": "730878",
+    "tokensToDistribute": "16371.000000",
+    "totalTokensHeld": "714507.000000",
+    "allocatedTokens": "16371.000000",
+    "decimals": 6
+  },
+  "wallets": [
+    {
+      "walletName": "AiYxij88KRXxWiAhNMqzxBd33wu5CSUd6KPAdoZETgfL",
+      "clientName": null,
+      "account": "AiYxij88KRXxWiAhNMqzxBd33wu5CSUd6KPAdoZETgfL",
+      "tokenAccount": "5MZZn4D96MkndVoBjSpuqCdnMDuv87VFV1A6kZrHLuA4",
+      "tokensHeld": "261068",
+      "holderPercentage": "36.53820047",
+      "tokensToReceive": "5981.668798"
+    },
+    {
+      "walletName": "BRD",
+      "clientName": "Stephane Alberto Lopes",
+      "account": "6pgtAbfCwukveUfKYm22FEHP8w7NKD9Vd73NaCExLAKi",
+      "tokenAccount": "58kQw1fVjtSdKHYHBsvRenDPfDFSV8MvwesVWsE8MsZM",
+      "tokensHeld": "60150",
+      "holderPercentage": "8.41839198",
+      "tokensToReceive": "1378.174951"
+    },
+    {
+      "walletName": "BRD Treasury",
+      "clientName": "BRD Treasury",
+      "account": "DsNJCAtUA7xmTSpYqNx9Chhx9QEDjM1AWzBFdVsbHKar",
+      "tokenAccount": "4XUYSGRjeoYU4bTmgJVKE9KiMpuB1FTjGJ8zXTgSN7Ha",
+      "tokensHeld": "30259.661584",
+      "holderPercentage": "4.23504061",
+      "tokensToReceive": "693.318497"
+    },
+    {
+      "walletName": "BRD Wallet",
+      "clientName": "IVAN AUGUSTO YURI RODARTE",
+      "account": "CbVUNS2kgnJszuWwP7ioxGLkUHGWppbcAitC5AynnDSx",
+      "tokenAccount": "4f2BJC3B3LRiapnz8xiT4YkXLvQzHbnCFxbMaSito4fh",
+      "tokensHeld": "30150",
+      "holderPercentage": "4.21969274",
+      "tokensToReceive": "690.805898"
+    },
+    {
+      "walletName": "czTNJnh5ihaYfaWzSjjratZrqMcw318KAPBQHdsvVBf",
+      "clientName": null,
+      "account": "czTNJnh5ihaYfaWzSjjratZrqMcw318KAPBQHdsvVBf",
+      "tokenAccount": "HnRpBvc3gMfSrJzCer36jnobnHWTph56hFKyvKG91iYP",
+      "tokensHeld": "30075",
+      "holderPercentage": "4.20919599",
+      "tokensToReceive": "689.087475"
+    },
+    {
+      "walletName": "Ai6gzjwzCL9E1rVMR9gP5gD9Y9Eds1uKj1NoC3ggJw4T",
+      "clientName": null,
+      "account": "Ai6gzjwzCL9E1rVMR9gP5gD9Y9Eds1uKj1NoC3ggJw4T",
+      "tokenAccount": "7Sxy6aovd4VEThL7P8X6ZcS9DxbH9Sy6HkMMSeisVf8b",
+      "tokensHeld": "30075",
+      "holderPercentage": "4.20919599",
+      "tokensToReceive": "689.087475"
+    },
+    {
+      "walletName": "9bxQUSioYmCfqeraQ4x1UND5k2PLMmMxLDMCGxVW9Mzz",
+      "clientName": null,
+      "account": "9bxQUSioYmCfqeraQ4x1UND5k2PLMmMxLDMCGxVW9Mzz",
+      "tokenAccount": "4bNa2pBXGVra7kqixKsGYkwx3MdSCuPiZpGrC7Tsc3Lf",
+      "tokensHeld": "30075",
+      "holderPercentage": "4.20919599",
+      "tokensToReceive": "689.087476"
+    },
+    {
+      "walletName": "8wju6VrZpjoZC5TZTGWVJSjNMnz8qeKweZpArcu8BoX9",
+      "clientName": null,
+      "account": "8wju6VrZpjoZC5TZTGWVJSjNMnz8qeKweZpArcu8BoX9",
+      "tokenAccount": "2CvmUYrv4CcZR2zvJhttNMLy4zNKKicwWoBRzBEveXx6",
+      "tokensHeld": "30075",
+      "holderPercentage": "4.20919599",
+      "tokensToReceive": "689.087476"
+    },
+    {
+      "walletName": "kulikovsky.skr",
+      "clientName": "SERGIO KULIKOVSKY",
+      "account": "3qsNsvWUJsZTk9FS3mmFv2YiUD6gPUJwpeqLQv4ahof8",
+      "tokenAccount": "2WvvG3sHfHyRBajuzCxbREedRHNGX1YxiEVohGK5GEEf",
+      "tokensHeld": "30075",
+      "holderPercentage": "4.20919599",
+      "tokensToReceive": "689.087476"
+    },
+    {
+      "walletName": "3hJgnmP5gZfkV876PnvJpzCUrq9vGm9fckQNhUB6ftWV",
+      "clientName": null,
+      "account": "3hJgnmP5gZfkV876PnvJpzCUrq9vGm9fckQNhUB6ftWV",
+      "tokenAccount": "FPzm4TruXnfGkf2t3YgC5vCPjkLxwYGvPCJXTc4UP1WC",
+      "tokensHeld": "30075",
+      "holderPercentage": "4.20919599",
+      "tokensToReceive": "689.087476"
+    },
+    {
+      "walletName": "5h1sZWC93q9mWihsa2tvrsuJoqGY58655CSHkug2opRV",
+      "clientName": null,
+      "account": "5h1sZWC93q9mWihsa2tvrsuJoqGY58655CSHkug2opRV",
+      "tokenAccount": "FMb9i4T61D6YNh8cBWvMYKVuPMV6F1ETq2ZV9GLJU51e",
+      "tokensHeld": "30075",
+      "holderPercentage": "4.20919599",
+      "tokensToReceive": "689.087476"
+    },
+    {
+      "walletName": "BRD WALLET",
+      "clientName": "Daniel Henrique Cohn",
+      "account": "GMuR2i1TfXKvdXJn3iBZCdXomnqVQN3NpEApnmixEndb",
+      "tokenAccount": "2Sm5kBgNey4zMnxaGBxNN8HhsoikbmgwEJu4cy9jfrS1",
+      "tokensHeld": "30075",
+      "holderPercentage": "4.20919599",
+      "tokensToReceive": "689.087476"
+    },
+    {
+      "walletName": "BRD Wallet",
+      "clientName": "YGOR BERNARDO MUNHOZ",
+      "account": "3DHW2ZCYcKdzqBxyeVcG6TxG6foHdokvJS6Xr55VKPZq",
+      "tokenAccount": "CSXsNbG9jGk4hYwVz1W2DTXX4TX7dRZ9bfypHgxtuDfV",
+      "tokensHeld": "30075",
+      "holderPercentage": "4.20919599",
+      "tokensToReceive": "689.087476"
+    },
+    {
+      "walletName": "5C7R3fhGJ37wBWEbSrw8KU8sfj8zeoctDAFDkLxcJmgv",
+      "clientName": null,
+      "account": "5C7R3fhGJ37wBWEbSrw8KU8sfj8zeoctDAFDkLxcJmgv",
+      "tokenAccount": "5cKSj1EmK8tViMjKGnaKWSD2jBFK5FN6aQ8hEPf3vTor",
+      "tokensHeld": "30075",
+      "holderPercentage": "4.20919599",
+      "tokensToReceive": "689.087476"
+    },
+    {
+      "walletName": "BzwiLbRnLdCtsmWy8Nj4ztmVK6QyoXUC8nLPFqeoZur5",
+      "clientName": null,
+      "account": "BzwiLbRnLdCtsmWy8Nj4ztmVK6QyoXUC8nLPFqeoZur5",
+      "tokenAccount": "2VgpoiGvhALCxmKcTqdh5YEAMmB7YfL2Gxdy6pdgGvDJ",
+      "tokensHeld": "24654.338416",
+      "holderPercentage": "3.45053840",
+      "tokensToReceive": "564.887642"
+    },
+    {
+      "walletName": "GuU4YH1v6DdkbZwh5Qi7prDxEupGFTtUaTU7EpzRHbQU",
+      "clientName": null,
+      "account": "GuU4YH1v6DdkbZwh5Qi7prDxEupGFTtUaTU7EpzRHbQU",
+      "tokenAccount": "HV2LwjQJj7PCFJGYRWVPZN14YPfEEaTKy4YanFaDJrMx",
+      "tokensHeld": "6475",
+      "holderPercentage": "0.90621925",
+      "tokensToReceive": "148.357154"
+    },
+    {
+      "walletName": "Luca1",
+      "clientName": "LUCA MACHADO BOTTINO",
+      "account": "FPx2Ta2emkrAE3w6jgr9uadVUeBGovnYKEGR8vnRx8jW",
+      "tokenAccount": "DWkwwBionX2MAFRaKSTUb2GytRjVXHWq1W6MnyCdoHpe",
+      "tokensHeld": "1000",
+      "holderPercentage": "0.13995664",
+      "tokensToReceive": "22.912302"
+    }
+  ]
+}

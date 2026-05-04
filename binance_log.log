@@ -96,3 +96,93 @@ Traceback (most recent call last):
     raise HTTPError(http_error_msg, response=self)
 requests.exceptions.HTTPError: 400 Client Error: Bad Request for url: https://api.binance.com/api/v3/ticker/price?symbol=SOLOUSDT
 ,-717471907 - __main__ - WARNING - Could not price spot balance for SOLO: 400 Client Error: Bad Request for url: https://api.binance.com/api/v3/ticker/price?symbol=SOLOUSDT
+,-644953660 - __main__ - INFO - Skipping spot USD pricing for cash asset ARS.
+,-644950669 - __main__ - INFO - Skipping spot USD pricing for cash asset BRL.
+,-644948980 - __main__ - ERROR - Error fetching spot ticker price for SOLOUSDT: 400 Client Error: Bad Request for url: https://api.binance.com/api/v3/ticker/price?symbol=SOLOUSDT
+Traceback (most recent call last):
+  File "C:\Users\acer\Documents\brd_asset_management\binance\binance_controller.py", line 393, in get_spot_ticker_price
+    response.raise_for_status()
+  File "C:\Users\acer\AppData\Local\Programs\Python\Python312\Lib\site-packages\requests\models.py", line 1024, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 400 Client Error: Bad Request for url: https://api.binance.com/api/v3/ticker/price?symbol=SOLOUSDT
+,-644948943 - __main__ - WARNING - Could not price spot balance for SOLO: 400 Client Error: Bad Request for url: https://api.binance.com/api/v3/ticker/price?symbol=SOLOUSDT
+,-644845768 - __main__ - INFO - Skipping spot USD pricing for cash asset ARS.
+,-644825880 - __main__ - INFO - Skipping spot USD pricing for cash asset ARS.
+,-644822613 - __main__ - INFO - Skipping spot USD pricing for cash asset BRL.
+,-644820860 - __main__ - ERROR - Error fetching spot ticker price for SOLOUSDT: 400 Client Error: Bad Request for url: https://api.binance.com/api/v3/ticker/price?symbol=SOLOUSDT
+Traceback (most recent call last):
+  File "C:\Users\acer\Documents\brd_asset_management\binance\binance_controller.py", line 393, in get_spot_ticker_price
+    response.raise_for_status()
+  File "C:\Users\acer\AppData\Local\Programs\Python\Python312\Lib\site-packages\requests\models.py", line 1024, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 400 Client Error: Bad Request for url: https://api.binance.com/api/v3/ticker/price?symbol=SOLOUSDT
+,-644820859 - __main__ - WARNING - Could not price spot balance for SOLO: 400 Client Error: Bad Request for url: https://api.binance.com/api/v3/ticker/price?symbol=SOLOUSDT
+,-644818196 - __main__ - INFO - Submitting spot order: {'symbol': 'USDCUSDT', 'type': 'MARKET', 'side': 'SELL', 'quantity': '5', 'newOrderRespType': 'FULL'}
+,-644817903 - __main__ - INFO - Binance spot order response: {'symbol': 'USDCUSDT', 'orderId': 1479224724, 'orderListId': -1, 'clientOrderId': '23daLuGvI9KEpGMmXcXz0z', 'transactTime': 1777471642500, 'price': '0.00000000', 'origQty': '5.00000000', 'executedQty': '5.00000000', 'origQuoteOrderQty': '0.00000000', 'cummulativeQuoteQty': '5.00005000', 'status': 'FILLED', 'timeInForce': 'GTC', 'type': 'MARKET', 'side': 'SELL', 'workingTime': 1777471642500, 'fills': [{'price': '1.00001000', 'qty': '5.00000000', 'commission': '0.00000000', 'commissionAsset': 'BNB', 'tradeId': 420212779}], 'selfTradePreventionMode': 'EXPIRE_MAKER'}
+,-644817609 - __main__ - ERROR - Could not record Binance trade in Postgres: No Postgres Python driver found. Install one of: psycopg[binary] or psycopg2-binary.
+Traceback (most recent call last):
+  File "C:\Users\acer\Documents\brd_asset_management\binance\binance_controller.py", line 446, in _record_executed_trade
+    record = self._get_trade_recorder().record_trade(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\acer\Documents\brd_asset_management\binance\binance_controller.py", line 402, in _get_trade_recorder
+    self.trade_recorder = PostgresTradeRecorder()
+                          ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\acer\Documents\brd_asset_management\database\postgres_trade_recorder.py", line 64, in __init__
+    self.driver = self._get_driver()
+                  ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\acer\Documents\brd_asset_management\database\postgres_trade_recorder.py", line 73, in _get_driver
+    raise PostgresTradeRecorderError(
+database.postgres_trade_recorder.PostgresTradeRecorderError: No Postgres Python driver found. Install one of: psycopg[binary] or psycopg2-binary.
+,-644816728 - __main__ - INFO - Skipping spot USD pricing for cash asset ARS.
+,-644813956 - __main__ - INFO - Skipping spot USD pricing for cash asset BRL.
+,-644812254 - __main__ - ERROR - Error fetching spot ticker price for SOLOUSDT: 400 Client Error: Bad Request for url: https://api.binance.com/api/v3/ticker/price?symbol=SOLOUSDT
+Traceback (most recent call last):
+  File "C:\Users\acer\Documents\brd_asset_management\binance\binance_controller.py", line 393, in get_spot_ticker_price
+    response.raise_for_status()
+  File "C:\Users\acer\AppData\Local\Programs\Python\Python312\Lib\site-packages\requests\models.py", line 1024, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 400 Client Error: Bad Request for url: https://api.binance.com/api/v3/ticker/price?symbol=SOLOUSDT
+,-644812253 - __main__ - WARNING - Could not price spot balance for SOLO: 400 Client Error: Bad Request for url: https://api.binance.com/api/v3/ticker/price?symbol=SOLOUSDT
+,-644721323 - __main__ - INFO - Skipping spot USD pricing for cash asset ARS.
+,-644718575 - __main__ - INFO - Skipping spot USD pricing for cash asset BRL.
+,-644716824 - __main__ - ERROR - Error fetching spot ticker price for SOLOUSDT: 400 Client Error: Bad Request for url: https://api.binance.com/api/v3/ticker/price?symbol=SOLOUSDT
+Traceback (most recent call last):
+  File "C:\Users\acer\Documents\brd_asset_management\binance\binance_controller.py", line 393, in get_spot_ticker_price
+    response.raise_for_status()
+  File "C:\Users\acer\AppData\Local\Programs\Python\Python312\Lib\site-packages\requests\models.py", line 1024, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 400 Client Error: Bad Request for url: https://api.binance.com/api/v3/ticker/price?symbol=SOLOUSDT
+,-644716821 - __main__ - WARNING - Could not price spot balance for SOLO: 400 Client Error: Bad Request for url: https://api.binance.com/api/v3/ticker/price?symbol=SOLOUSDT
+,-644273123 - __main__ - INFO - Skipping spot USD pricing for cash asset ARS.
+,-644270270 - __main__ - INFO - Skipping spot USD pricing for cash asset BRL.
+,-644268321 - __main__ - ERROR - Error fetching spot ticker price for SOLOUSDT: 400 Client Error: Bad Request for url: https://api.binance.com/api/v3/ticker/price?symbol=SOLOUSDT
+Traceback (most recent call last):
+  File "C:\Users\acer\Documents\brd_asset_management\binance\binance_controller.py", line 393, in get_spot_ticker_price
+    response.raise_for_status()
+  File "C:\Users\acer\AppData\Local\Programs\Python\Python312\Lib\site-packages\requests\models.py", line 1024, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 400 Client Error: Bad Request for url: https://api.binance.com/api/v3/ticker/price?symbol=SOLOUSDT
+,-644268318 - __main__ - WARNING - Could not price spot balance for SOLO: 400 Client Error: Bad Request for url: https://api.binance.com/api/v3/ticker/price?symbol=SOLOUSDT
+,-638600926 - __main__ - INFO - Skipping spot USD pricing for cash asset ARS.
+,-638598023 - __main__ - INFO - Skipping spot USD pricing for cash asset BRL.
+,-638596234 - __main__ - ERROR - Error fetching spot ticker price for SOLOUSDT: 400 Client Error: Bad Request for url: https://api.binance.com/api/v3/ticker/price?symbol=SOLOUSDT
+Traceback (most recent call last):
+  File "C:\Users\acer\Documents\brd_asset_management\binance\binance_controller.py", line 393, in get_spot_ticker_price
+    response.raise_for_status()
+  File "C:\Users\acer\AppData\Local\Programs\Python\Python312\Lib\site-packages\requests\models.py", line 1024, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 400 Client Error: Bad Request for url: https://api.binance.com/api/v3/ticker/price?symbol=SOLOUSDT
+,-638596233 - __main__ - WARNING - Could not price spot balance for SOLO: 400 Client Error: Bad Request for url: https://api.binance.com/api/v3/ticker/price?symbol=SOLOUSDT
+,-638593452 - __main__ - INFO - Submitting spot order: {'symbol': 'USDCUSDT', 'type': 'MARKET', 'side': 'SELL', 'quantity': '5', 'newOrderRespType': 'FULL'}
+,-638593158 - __main__ - INFO - Binance spot order response: {'symbol': 'USDCUSDT', 'orderId': 1479350506, 'orderListId': -1, 'clientOrderId': 'UwBaBSRr5yHgaBtUZUPOLU', 'transactTime': 1777477867718, 'price': '0.00000000', 'origQty': '5.00000000', 'executedQty': '5.00000000', 'origQuoteOrderQty': '0.00000000', 'cummulativeQuoteQty': '5.00045000', 'status': 'FILLED', 'timeInForce': 'GTC', 'type': 'MARKET', 'side': 'SELL', 'workingTime': 1777477867718, 'fills': [{'price': '1.00009000', 'qty': '5.00000000', 'commission': '0.00000000', 'commissionAsset': 'BNB', 'tradeId': 420258535}], 'selfTradePreventionMode': 'EXPIRE_MAKER'}
+,-638592771 - __main__ - INFO - Recorded Binance trade in Postgres: symbol=USDCUSDT, market_type=spot, quantity=5.00000000, executed_price=1.00009000
+,-638592475 - __main__ - INFO - Skipping spot USD pricing for cash asset ARS.
+,-638589536 - __main__ - INFO - Skipping spot USD pricing for cash asset BRL.
+,-638587598 - __main__ - ERROR - Error fetching spot ticker price for SOLOUSDT: 400 Client Error: Bad Request for url: https://api.binance.com/api/v3/ticker/price?symbol=SOLOUSDT
+Traceback (most recent call last):
+  File "C:\Users\acer\Documents\brd_asset_management\binance\binance_controller.py", line 393, in get_spot_ticker_price
+    response.raise_for_status()
+  File "C:\Users\acer\AppData\Local\Programs\Python\Python312\Lib\site-packages\requests\models.py", line 1024, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 400 Client Error: Bad Request for url: https://api.binance.com/api/v3/ticker/price?symbol=SOLOUSDT
+,-638587597 - __main__ - WARNING - Could not price spot balance for SOLO: 400 Client Error: Bad Request for url: https://api.binance.com/api/v3/ticker/price?symbol=SOLOUSDT

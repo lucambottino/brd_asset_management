@@ -18,6 +18,7 @@ import sys
 sys.path.append(".")
 from singleton_meta import SingletonMeta
 from utils import push_notification, setup_logger
+from database.postgres_trade_recorder import PostgresTradeRecorder
 
 
 
@@ -39,7 +40,7 @@ MARKET_ALIASES = {
 VALID_ORDER_SIDES = {"BUY", "SELL"}
 
 DEFAULT_QUOTE_ASSET = "USDT"
-QUOTE_ASSETS = ['USDT', 'USDC', 'FDUSD', 'BUSD', 'TUSD', 'BRL', 'ARS', 'BTC', 'ETH]', 'BNB', 'TRY', 'EUR']
+QUOTE_ASSETS = ['USDT', 'USDC', 'FDUSD', 'BUSD', 'TUSD', 'BRL', 'ARS', 'BTC', 'ETH', 'BNB', 'TRY', 'EUR']
 UNDERLYING_CURRENCIES = ['USDC', 'USDT']
 STABLE_PRICE_ASSETS = {'USDC', 'USDT', 'FDUSD', 'BUSD', 'TUSD'}
 CASH_ASSETS = STABLE_PRICE_ASSETS | {'BRL', 'ARS', 'TRY', 'EUR'}
@@ -208,6 +209,7 @@ class BinanceController(metaclass=SingletonMeta):
         self.spot_symbol_filters: Dict[str, Dict[str, Decimal]] = {}
         self.futures_symbol_filters: Dict[str, Dict[str, Decimal]] = {}
         self.futures_precision: Dict[str, int] = {}
+        self.trade_recorder: Optional[PostgresTradeRecorder] = None
 
     def _normalize_market_type(self, market_type: str = FUTURES_MARKET) -> str:
         normalized_market = MARKET_ALIASES.get(str(market_type).lower())
@@ -395,6 +397,66 @@ class BinanceController(metaclass=SingletonMeta):
             self.logger.error(f"Error fetching spot ticker price for {token}: {e}", exc_info=True)
             raise e
 
+    def _get_trade_recorder(self) -> PostgresTradeRecorder:
+        if self.trade_recorder is None:
+            self.trade_recorder = PostgresTradeRecorder()
+        return self.trade_recorder
+
+    def _get_order_id(self, response: Dict[str, Any]) -> Optional[int]:
+        try:
+            order_id = response.get("orderId")
+            return int(order_id) if order_id is not None else None
+        except (TypeError, ValueError):
+            return None
+
+    def _enrich_order_response(
+        self,
+        response: Dict[str, Any],
+        market_type: str,
+        fallback_order: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        order_id = self._get_order_id(response)
+        symbol = response.get("symbol") or fallback_order.get("symbol")
+        if order_id is None or not symbol:
+            return response
+
+        try:
+            if market_type == SPOT_MARKET:
+                order_details = self.binance_client.get_order(symbol=symbol, orderId=order_id)
+            else:
+                order_details = self.binance_client.futures_get_order(symbol=symbol, orderId=order_id)
+        except Exception as exc:
+            self.logger.warning(f"Could not fetch final {market_type} order details for {symbol} order {order_id}: {exc}")
+            return response
+
+        if isinstance(order_details, dict):
+            enriched_response = dict(response)
+            enriched_response.update({key: value for key, value in order_details.items() if value not in (None, "")})
+            return enriched_response
+        return response
+
+    def _record_executed_trade(
+        self,
+        response: Dict[str, Any],
+        market_type: str,
+        fallback_order: Dict[str, Any],
+    ) -> None:
+        try:
+            enriched_response = self._enrich_order_response(response, market_type, fallback_order)
+            record = self._get_trade_recorder().record_trade(
+                enriched_response,
+                market_type=market_type,
+                fallback_order=fallback_order,
+            )
+            self.logger.info(
+                f"Recorded Binance trade in Postgres: symbol={record.symbol}, "
+                f"market_type={record.market_type}, quantity={record.quantity}, "
+                f"executed_price={record.executed_price}"
+            )
+        except Exception as exc:
+            self.logger.error(f"Could not record Binance trade in Postgres: {exc}", exc_info=True)
+            push_notification("Binance Trade DB Record Failed", f"Could not record trade in Postgres: {exc}")
+
     def send_market_spot_order(self, token: str, quantity: float, side: str) -> Dict[str, Any]:
         return self.execute_market_individual_order(token, quantity, side, market_type=SPOT_MARKET)
 
@@ -420,6 +482,7 @@ class BinanceController(metaclass=SingletonMeta):
 
             handle_single_response(response, logger=self.logger)
             self.logger.info(f"Binance {market_type} order response: {response}")
+            self._record_executed_trade(response, market_type, fallback_order=order)
             return response
 
         except BinanceControllerError:
@@ -455,6 +518,7 @@ class BinanceController(metaclass=SingletonMeta):
                 "type": "MARKET",
                 "side": self._normalize_side(side),
                 "quantity": order_quantity,
+                "newOrderRespType": "RESULT",
             }
         return order
 
@@ -466,6 +530,7 @@ class BinanceController(metaclass=SingletonMeta):
                 "type": "MARKET",
                 "side": self._normalize_side(side),
                 "quantity": order_quantity,
+                "newOrderRespType": "FULL",
             }
         return order
     
@@ -945,5 +1010,7 @@ if __name__ == "__main__":
     pos = binance.get_positions(normalize_symbols=True, kind="spot")
     print(pos)
 
-    # binance.send_market_spot_order("BTC", 0.0004, side="SELL")
+    binance.send_market_spot_order("USDC", 5, side="SELL")
 
+    pos = binance.get_positions(normalize_symbols=True, kind="spot")
+    print(pos)
